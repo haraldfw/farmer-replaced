@@ -1,6 +1,21 @@
 import util
+import goals
+
+start_x, start_y = -1, -1
+initial_solution_modes = []
+mappers = []
+entire_map_lap_solution = []
 
 dirs = [North, East, South, West]
+
+def spawn_mapper():
+	def f():
+		x, y = get_pos_x(), get_pos_y()
+
+def update_mappers():
+	if mappers and has_finished(mappers[0]):
+		map_graph = wait_for(mappers.pop(0))
+		
 
 def rotate_ccw(index):
 	return (index - 1) % 4
@@ -198,11 +213,8 @@ def do_until(goal_func):
 	while not goal_func():
 		reuse_maze()
 
-def create_task():
-	return reuse_maze
-
 if __name__ == "__main__":
 	clear()
 	while True:
 		set_world_size(32)
-		create_task()()
+		do_until(goals.infinite_goal)

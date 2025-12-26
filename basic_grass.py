@@ -12,5 +12,3 @@ def handle():
 		till()
 	elif can_harvest():
 		harvest()
-	
-	

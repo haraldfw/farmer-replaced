@@ -26,4 +26,3 @@ def create_task(start_lane_x, use_carrot_as_spacer=False):
 					util.water_to(0.25)
 			move(North)
 	return f
-		

@@ -6,4 +6,3 @@ speedup = 64
 
 run_time = simulate("mazereuse", sim_unlocks, sim_items, sim_globals, seed, speedup)
 print(run_time)
-
