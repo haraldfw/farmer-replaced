@@ -1,4 +1,5 @@
 import util
+import goals
 
 def sort_column_until_sorted(columnx, ws=get_world_size()):
 	end = ws - 2
@@ -135,4 +136,4 @@ def do_until(goal_func):
 if __name__ == "__main__":
 	clear()
 	set_world_size(8)
-	do_until(util.create_goal(None, { Items.Cactus: num_items(Items.Cactus)+2000000 }))
+	do_until(goals.create_goal(None, { Items.Cactus: num_items(Items.Cactus)+2000000 }))

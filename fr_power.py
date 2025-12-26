@@ -1,4 +1,5 @@
 import util
+import goals
 
 def create_petal_list():
 	petals = []
@@ -187,4 +188,4 @@ def do_until(goal_func):
 if __name__ == "__main__":
 	clear()
 	set_world_size(8)
-	do_until(util.create_goal(None, { Items.Power: num_items(Items.Power)+100000 }))
+	do_until(goals.create_goal(None, { Items.Power: num_items(Items.Power)+100000 }))

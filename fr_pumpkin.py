@@ -1,4 +1,5 @@
 import util
+import goals
 
 def plant_pumpkin():
 	if get_ground_type() != Grounds.Soil:
@@ -171,4 +172,4 @@ def do_until(goal_func):
 if __name__ == "__main__":
 	clear()
 	set_world_size(32)
-	do_until(util.create_goal(None, { Items.Pumpkin: num_items(Items.Pumpkin)+200000000 }))
+	do_until(goals.create_goal(None, { Items.Pumpkin: num_items(Items.Pumpkin)+200000000 }))

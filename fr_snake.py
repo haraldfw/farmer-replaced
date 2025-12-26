@@ -1,4 +1,6 @@
 import util
+import goals
+
 ws, end, top_line_y, bottom_line_y, detour_length = -1,-1,-1,-1, -1
 snake_length = 1
 applex, appley = -1, -1
@@ -127,4 +129,4 @@ def do_until(goal_func):
 if __name__ == "__main__":
 	clear()
 	set_world_size(32)
-	do_until(util.create_goal(None, {Items.Bone: 33488928}))
+	do_until(goals.create_goal(None, {Items.Bone: 33488928}))
