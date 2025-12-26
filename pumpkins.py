@@ -1,0 +1,1 @@
+leaderboard_run(Leaderboards.Pumpkins, "fr_pumpkin", 1000)

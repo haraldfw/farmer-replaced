@@ -1,0 +1,95 @@
+import util
+import scheduling
+import fr_move_and_harvest
+import fr_bush
+import fr_bush_multi
+import fr_tree
+import fr_pumpkin
+import fr_power
+import fr_polyculture
+import fr_cactus
+import fr_snake
+import mazereuse
+
+def start():
+	ticks_at_start = get_tick_count()
+	scheduling.do_single_until_unlock(harvest, Unlocks.Speed)
+	scheduling.do_single_until_unlock(util.wait_and_harvest, Unlocks.Expand)
+	scheduling.do_single_until_unlock(fr_move_and_harvest.do, Unlocks.Plant)
+	scheduling.do_single_until_unlock(fr_bush.do_single_lane, Unlocks.Speed)
+	scheduling.do_single_until_unlock(fr_bush.do_single_lane, Unlocks.Expand)
+	clear()
+	scheduling.do_single_until_unlock(fr_bush.do_multi_lane, Unlocks.Carrots)
+	scheduling.run_do_until(fr_bush_multi.do_until, Unlocks.Speed)
+	scheduling.run_do_until(fr_bush_multi.do_until, Unlocks.Trees)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Watering)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Grass)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Expand)
+	clear()
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Watering)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Expand)
+	clear()
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Trees)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Carrots)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Carrots)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Speed)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Speed)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Watering)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Grass)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Grass)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Trees)
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Sunflowers)
+	scheduling.run_do_until(fr_tree.do_until, None, { Items.Carrot: 80 })
+	scheduling.run_do_until(fr_power.do_until, None, { Items.Power: 80 })
+	scheduling.run_do_until(fr_tree.do_until, Unlocks.Pumpkins)
+	scheduling.run_do_until(fr_tree.do_until, None, { Items.Carrot: 1200 })
+	scheduling.run_do_until(fr_pumpkin.do_until, Unlocks.Expand)
+	clear()
+	scheduling.run_do_until(fr_power.do_until, None, { Items.Power: 1200 })
+	scheduling.run_do_until(fr_pumpkin.do_until, Unlocks.Polyculture)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Fertilizer)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Trees)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Fertilizer)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Fertilizer)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Fertilizer)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Pumpkins)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Pumpkins, { Items.Carrot: 3000 })
+	scheduling.run_do_until(fr_pumpkin.do_until, Unlocks.Cactus)
+	scheduling.run_do_until(fr_cactus.do_until, Unlocks.Dinosaurs, {Items.Cactus: 30000})
+	unlock(Unlocks.Hats)
+	scheduling.run_do_until(fr_snake.do_until, Unlocks.Polyculture)
+	scheduling.run_do_until(fr_power.do_until, None, { Items.Power: 1200 })
+	scheduling.run_do_until(fr_pumpkin.do_until, Unlocks.Expand)
+	clear()
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Carrots)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Carrots)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Trees)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Grass)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Watering)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Watering)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Watering)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Pumpkins)
+	scheduling.run_do_until(fr_polyculture.do_until, None, { Items.Carrot: 32000 })
+	scheduling.run_do_until(fr_pumpkin.do_until, Unlocks.Cactus)
+	scheduling.run_do_until(fr_pumpkin.do_until, None, { Items.Pumpkin: 40000 })
+	scheduling.run_do_until(fr_cactus.do_until, Unlocks.Mazes)
+	scheduling.run_do_until(fr_cactus.do_until, Unlocks.Mazes)
+	scheduling.run_do_until(fr_cactus.do_until, Unlocks.Mazes)
+	scheduling.run_do_until(fr_pumpkin.do_until, Unlocks.Expand)
+	clear()
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Grass, { Items.Carrot: 64000 })
+	scheduling.run_do_until(fr_pumpkin.do_until, None, { Items.Weird_Substance: 1000 })
+	scheduling.run_do_until(mazereuse.do_until, Unlocks.Megafarm)
+	scheduling.run_do_until(mazereuse.do_until, Unlocks.Megafarm)
+	scheduling.run_do_until(fr_polyculture.do_until, Unlocks.Trees)
+	scheduling.run_do_until(fr_cactus.do_until, Unlocks.Dinosaurs)
+	scheduling.run_do_until(fr_cactus.do_until, Unlocks.Dinosaurs)
+	scheduling.run_do_until(fr_cactus.do_until, None, {Items.Cactus: 64000})
+	scheduling.run_do_until(fr_power.do_until, None, { Items.Power: 12000 })
+	#scheduling.run_do_until(fr_snake.do_until, Unlocks.Polyculture)
+
+	quick_print("time used:", (get_tick_count() - ticks_at_start)/400, "seconds")
+	assert() # fails
+
+if __name__ == "__main__":
+	start()
