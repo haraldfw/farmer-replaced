@@ -8,13 +8,13 @@ def do_until_single_lane(goal_func):
 			plant(Entities.Bush)
 		move(North)
 
-def do_until_multi_lane(goal_func):
+def do_until_multi_lane(goal_func, ws=get_world_size()):
 	moves = 0
 	while not goal_func():
 		if can_harvest():
 			harvest()
 			plant(Entities.Bush)
-		if moves % 3 == 0:
+		if moves % ws == 0:
 			move(East)
 		else:
 			move(North)
@@ -23,4 +23,4 @@ def do_until_multi_lane(goal_func):
 if __name__ == "__main__":
 	set_world_size(3)
 	set_execution_speed(1)
-	do_multi_lane(goals.infinite_goal)
+	do_until_multi_lane(goals.infinite_goal)
