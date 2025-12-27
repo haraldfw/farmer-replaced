@@ -1,16 +1,23 @@
 import util
 import goals
 
+# where a drone should start if it wans to use the lap solution
 start_x, start_y = -1, -1
-initial_solution_modes = []
+# what moves to execute from the start x and y to do an entire lap of the original map
+lap_moves = []
+# list of drones currently lapping to map out the world
 mappers = []
-entire_map_lap_solution = []
+
+# graph of the world map
+# a node record looks like this: 
+world_map =	{}
 
 dirs = [North, East, South, West]
 
 def spawn_mapper():
 	def f():
 		x, y = get_pos_x(), get_pos_y()
+		to_start_moves = find_solution
 
 def update_mappers():
 	if mappers and has_finished(mappers[0]):
@@ -36,17 +43,11 @@ def use_substance():
 
 
 def create_map_dict(world_size):
-	map = {}
+	m = {}
 	for x in range(world_size):
 		for y in range(world_size):
-			map[(x, y)] = []
-	return map
-
-def attempt_move_and_back(dir, back_dir):
-	if move(dir):
-		move(back_dir)
-		return True
-	return False
+			m[(x, y)] = []
+	return m
 
 def get_heuristic(start, goal):
 	# manhattan distance
@@ -65,7 +66,7 @@ def get_location_in_direction(start, dir):
 	asdf()
 	print("erroneous dir in get_location_in_direction")
 
-def smallest_record(nodes):
+def get_smallest_record(nodes):
 	smallest_cost = 99999999
 	smallest_rec = []
 	for loc in nodes:
@@ -76,9 +77,10 @@ def smallest_record(nodes):
 			smallest_cost = estimatedTotalCost
 	return smallest_rec
 
-def find_solution(map, start, goal):
+# returns a list of moves to execute to end up on the wanted coordinates, using the drone's current
+# position as the start
+def find_solution(goal):
 	# A-Star implementation
-	# a node record looks like this: 
 	# [
 	#   (x, y),
 	#   direction,
@@ -86,16 +88,17 @@ def find_solution(map, start, goal):
 	#   estimatedTotalCost,
 	#   cost
 	# ]
+	start = (get_pos_x(), get_pos_y())
 	open_records = { start: [ start, None, 0, get_heuristic(start, goal), 0 ] } 
 	closed_records = {}
 	while open_records:
-		currentRec = smallest_record(open_records)
+		currentRec = get_smallest_record(open_records)
 		currLoc = currentRec[0]
 		if currLoc == goal:
 			# we have found our goal
 			break
 		# iterate connections
-		for dir in map[currLoc]:
+		for dir in world_map[currLoc]:
 			# overwritten in all branches of nest if-statement
 			endNodeHeuristic = 0
 
@@ -152,20 +155,19 @@ def find_solution(map, start, goal):
 		reversed_solution.append(util.flip_direction(solution[i-1]))
 	return reversed_solution
 
-
 def reuse_maze():
 	world_size = get_world_size()
 	ensure_bush()
 	use_substance()
 	# { (x, y): [open directions, North, South]}
-	map = create_map_dict(world_size)
+	#world_map = {} # create_map_dict(world_size)
 
 	# traverse the entire map
 	index = 0
 	tiles_left_to_populated = world_size*world_size
 	while tiles_left_to_populated > 0:
 		pos = (get_pos_x(), get_pos_y())
-		if not map[pos]:
+		if pos not in world_map:
 			# store valid directions from current tile
 			valid_dirs = []
 			if can_move(North):
@@ -176,7 +178,7 @@ def reuse_maze():
 				valid_dirs.append(South)
 			if can_move(West):
 				valid_dirs.append(West)
-			map[pos] = valid_dirs
+			world_map[pos] = valid_dirs
 			tiles_left_to_populated -= 1
 
 		dir = dirs[rotate_ccw(index)]
@@ -188,7 +190,7 @@ def reuse_maze():
 	# map populated
 	while True:
 		treasurex, treasurey = measure()
-		solution_moves = find_solution(map, (get_pos_x(), get_pos_y()), (treasurex, treasurey))
+		solution_moves = find_solution((treasurex, treasurey))
 		for dir in solution_moves:
 			pos = (get_pos_x(), get_pos_y())
 			valid_dirs = []
@@ -201,7 +203,7 @@ def reuse_maze():
 			if can_move(West):
 				valid_dirs.append(West)
 			# update the map with new missing walls as we go
-			map[pos] = valid_dirs
+			world_map[pos] = valid_dirs
 			move(dir)
 		# path followed and we are standing over the treasure
 		if not use_substance():
@@ -216,5 +218,5 @@ def do_until(goal_func):
 if __name__ == "__main__":
 	clear()
 	while True:
-		set_world_size(32)
+		set_world_size(8)
 		do_until(goals.infinite_goal)

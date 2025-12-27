@@ -7,10 +7,8 @@ def tile_operation():
 def do_until(goal_func):
 	plants = [Entities.Grass, Entities.Carrot, Entities.Tree]
 	ws = get_world_size()
-	tile_num = 0
 
 	def handle_tile():
-		global tile_num
 		if can_harvest():
 			harvest()
 
@@ -25,11 +23,10 @@ def do_until(goal_func):
 				elif to_plant == Entities.Tree:
 					util.water_to(0.5)
 				plant(to_plant)
-		tile_num+=1
 	while not goal_func():
-		util.traverse_zig_zag_dynamic(ws, handle_tile)
+		util.traverse_l_pattern(handle_tile, ws)
 
 if __name__ == "__main__":
 	clear()
 	set_world_size(8)
-	do(goals.infinite_goal)
+	do_until(goals.infinite_goal)

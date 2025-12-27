@@ -25,7 +25,7 @@ def do_until(goal_func):
 				plant(to_plant)
 		tile_num+=1
 	while not goal_func():
-		util.traverse_zig_zag_dynamic(ws, handle_tile)
+		util.traverse_l_pattern(handle_tile, ws)
 
 if __name__ == "__main__":
 	clear()
