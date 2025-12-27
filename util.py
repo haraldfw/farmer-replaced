@@ -146,16 +146,6 @@ def traverse_zig_zag_dynamic(world_size, func):
 		secondary_dir = East
 	traverse_zig_zag_naive(x, y, world_size, world_size, func, dir, secondary_dir)
 
-def wait_and_harvest():
-	while not can_harvest():
-		continue
-	harvest()
-
-def harvest_if_possible():
-	if can_harvest():
-		return harvest()
-	return False
-
 def move_to_closest_corner(ws=get_world_size()):
 	end = ws-1
 	x = get_pos_x()

@@ -1,7 +1,7 @@
 import util
 import goals
 import fr_power
-import fr_move_and_harvest
+import fr_startup
 import fr_bush
 import fr_bush_multi
 import fr_tree
@@ -88,6 +88,7 @@ def satisfy_costs(costs, ignore_zero_power=False):
 		# fr_tree.do_until
 		if num_unlocks(Unlocks.Speed) == 0:
 			# we are in the beginning stage, no unlocks
+			pass
 			
 	if Items.Pumpkin in costs:
 		fr_pumpkin.do_until(costs)
