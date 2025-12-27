@@ -1,8 +1,10 @@
 import util
 import goals
 
-# where a drone should start if it wans to use the lap solution
-start_x, start_y = -1, -1
+total_tiles_in_the_world = -1
+
+# where a drone should start if it wans to use lap_moves to do an entire lap of the map
+lap_start = (-1, -1)
 # what moves to execute from the start x and y to do an entire lap of the original map
 lap_moves = []
 # list of drones currently lapping to map out the world
@@ -10,19 +12,59 @@ mappers = []
 
 # graph of the world map
 # a node record looks like this: 
+# { (x, y): [open directions, North, South]}
 world_map =	{}
 
 dirs = [North, East, South, West]
 
 def spawn_mapper():
-	def f():
-		x, y = get_pos_x(), get_pos_y()
-		to_start_moves = find_solution
+	mappers.append(spawn_drone(walk_and_create_new_map))
 
-def update_mappers():
+def check_mappers_for_updates():
+	global world_map
 	if mappers and has_finished(mappers[0]):
-		map_graph = wait_for(mappers.pop(0))
+		world_map = wait_for(mappers.pop(0))
 		
+def walk_and_create_new_map():
+	global world_map
+	moves = find_solution(lap_start)
+	world_map = {}
+	# go back to lap start point
+	for next_direction in moves:
+		move(next_direction)
+
+	# follow the full map lap while mapping out missing walls
+	for next_direction in lap_moves:
+		pos = (get_pos_x(), get_pos_y())
+		if pos not in world_map:
+			# store valid directions from current tile
+			valid_dirs = []
+			if can_move(North):
+				valid_dirs.append(North)
+			if can_move(East):
+				valid_dirs.append(East)
+			if can_move(South):
+				valid_dirs.append(South)
+			if can_move(West):
+				valid_dirs.append(West)
+			world_map[pos] = valid_dirs
+
+		move(next_direction)
+	pos = (get_pos_x(), get_pos_y())
+	if pos not in world_map:
+		# store valid directions from current tile
+		valid_dirs = []
+		if can_move(North):
+			valid_dirs.append(North)
+		if can_move(East):
+			valid_dirs.append(East)
+		if can_move(South):
+			valid_dirs.append(South)
+		if can_move(West):
+			valid_dirs.append(West)
+		world_map[pos] = valid_dirs
+	return world_map
+
 
 def rotate_ccw(index):
 	return (index - 1) % 4
@@ -38,16 +80,7 @@ def ensure_bush():
 		plant(Entities.Bush)
 
 def use_substance():
-	substance_amount = get_world_size() * 2**(num_unlocked(Unlocks.Mazes) - 1)
 	return use_item(Items.Weird_Substance, substance_amount)
-
-
-def create_map_dict(world_size):
-	m = {}
-	for x in range(world_size):
-		for y in range(world_size):
-			m[(x, y)] = []
-	return m
 
 def get_heuristic(start, goal):
 	# manhattan distance
@@ -63,7 +96,7 @@ def get_location_in_direction(start, dir):
 		return (x, y-1)
 	if dir == West:
 		return (x-1, y)
-	asdf()
+	assert()
 	print("erroneous dir in get_location_in_direction")
 
 def get_smallest_record(nodes):
@@ -156,16 +189,20 @@ def find_solution(goal):
 	return reversed_solution
 
 def reuse_maze():
-	world_size = get_world_size()
+	global substance_amount
+	global lap_start
+	ws = get_world_size()
+	substance_amount = ws * 2**(num_unlocked(Unlocks.Mazes) - 1)
+	total_tiles_in_the_world = ws*ws
+
 	ensure_bush()
 	use_substance()
-	# { (x, y): [open directions, North, South]}
-	#world_map = {} # create_map_dict(world_size)
-
+	
+	lap_start = (get_pos_x(), get_pos_y())
 	# traverse the entire map
 	index = 0
-	tiles_left_to_populated = world_size*world_size
-	while tiles_left_to_populated > 0:
+	tiles_left_to_populate = total_tiles_in_the_world
+	while tiles_left_to_populate > 0:
 		pos = (get_pos_x(), get_pos_y())
 		if pos not in world_map:
 			# store valid directions from current tile
@@ -179,19 +216,24 @@ def reuse_maze():
 			if can_move(West):
 				valid_dirs.append(West)
 			world_map[pos] = valid_dirs
-			tiles_left_to_populated -= 1
+			tiles_left_to_populate -= 1
 
-		dir = dirs[rotate_ccw(index)]
-		if move(dir):
+		left_dir = dirs[rotate_ccw(index)]
+		if move(left_dir):
+			lap_moves.append(left_dir)
 			index = rotate_ccw(index)
 		elif not move(dirs[index]):
 			index = rotate_cw(index)
+		else:
+			lap_moves.append(dirs[index])
 		
 	# map populated
+
+	mazes_complete = 0
 	while True:
 		treasurex, treasurey = measure()
 		solution_moves = find_solution((treasurex, treasurey))
-		for dir in solution_moves:
+		for left_dir in solution_moves:
 			pos = (get_pos_x(), get_pos_y())
 			valid_dirs = []
 			if can_move(North):
@@ -204,7 +246,12 @@ def reuse_maze():
 				valid_dirs.append(West)
 			# update the map with new missing walls as we go
 			world_map[pos] = valid_dirs
-			move(dir)
+			move(left_dir)
+		mazes_complete += 1
+
+		if mazes_complete % 5 == 0 and mazes_complete < 250:
+			spawn_mapper()
+		check_mappers_for_updates()
 		# path followed and we are standing over the treasure
 		if not use_substance():
 			# unable to use substance because this is the last chest (nr 300)
@@ -217,6 +264,7 @@ def do_until(goal_func):
 
 if __name__ == "__main__":
 	clear()
-	while True:
-		set_world_size(8)
-		do_until(goals.infinite_goal)
+	set_world_size(14)
+	do_until(goals.create_goal(None, { Items.Gold: num_items(Items.Gold)+1}))  
+	quick_print(num_items(Items.Gold))
+	# do_until(goals.infinite_goal)

@@ -9,11 +9,14 @@ sim_items = {
 	Items.Fertilizer: 20000000,
 	Items.Weird_Substance: 2000000,
 }
-sim_globals = {"goal" : 2000000}
+sim_globals = {"sim_goal" : 2000000, "sim_ws": 32}
 seed = -1
 speedup = 1000
 
-run_time = simulate("fr_substance_abuse", sim_unlocks, sim_items, sim_globals, seed, speedup)
+#run_time = simulate("fr_substance_abuse", sim_unlocks, sim_items, sim_globals, seed, speedup)
+run_time = simulate("sim_mazereuse", sim_unlocks, sim_items, sim_globals, seed, speedup)
+
+
 quick_print(run_time)
 
 #leaderboard_run(Leaderboards.Dinosaur, "fr_snake", 200)
