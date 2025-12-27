@@ -249,7 +249,7 @@ def reuse_maze():
 			move(left_dir)
 		mazes_complete += 1
 
-		if mazes_complete % 5 == 0 and mazes_complete < 250:
+		if num_drones() < max_drones() and  mazes_complete % 5 == 0 and mazes_complete < 250:
 			spawn_mapper()
 		check_mappers_for_updates()
 		# path followed and we are standing over the treasure
