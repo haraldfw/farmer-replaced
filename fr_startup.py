@@ -6,17 +6,17 @@ def do():
 	harvest()
 	move(North)
 
-def harvest_until(goal_func):
-	while not goal_func():
+def basic_harvest_satisfy_hay_cost(hay_cost):
+	while num_items(Items.Hay) < hay_cost:
 		harvest()
 
-def wait_and_harvest_until(goal_func):
-	while not goal_func():
+def wait_and_harvest_satisfy_cost(hay_cost):
+	while num_items(Items.Hay) < hay_cost:
 		if can_harvest():
 			harvest()
 
-def move_and_harvest_until(goal_func):
-	while not goal_func():
+def move_and_harvest_satisfy_cost(goal_func):
+	while num_items(Items.Hay) < hay_cost:
 		harvest()
 		move(North)
 		harvest()

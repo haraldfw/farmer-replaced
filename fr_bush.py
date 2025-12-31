@@ -5,18 +5,25 @@ def harvest_and_ensure_bush():
 	if can_harvest():
 		harvest()
 		plant(Entities.Bush)
-	
 
-def do_until_single_lane(goal_func):
-	while not goal_func():
+def satisfy_cost_single_lane(wood_cost):
+	while num_items(Items.Wood) < wood_cost:
 		if can_harvest():
 			harvest()
 			plant(Entities.Bush)
 		move(North)
 
-def do_until_multi_lane(goal_func, ws=get_world_size()):
-	while not goal_func():
-		util.traverse_l_pattern(harvest_and_ensure_bush)
+def satisfy_cost_multi_lane(wood_cost):
+	while num_items(Items.Wood) < wood_cost:
+		util.traverse_l_pattern(harvest_and_ensure_bush, ws)
+
+def satisfy_cost(wood_cost, _ws=get_world_size()):
+	global ws
+	ws = _ws
+	if ws == 1:
+		satisfy_cost_single_lane(wood_cost)
+	else:
+		satisfy_cost_multi_lane(wood_cost)
 		
 if __name__ == "__main__":
 	set_world_size(3)

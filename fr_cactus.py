@@ -1,6 +1,9 @@
 import util
 import goals
 
+ws = -1
+end = -1
+
 def plant_cactus():
 	if get_ground_type() != Grounds.Soil:
 		till()
@@ -8,7 +11,7 @@ def plant_cactus():
 		harvest()
 	plant(Entities.Cactus)
 
-def sort_column(columnx, ws=get_world_size()):
+def sort_column(columnx):
 	util.move_to(columnx, 0)
 	moves = ws - 2
 
@@ -41,7 +44,7 @@ def sort_column(columnx, ws=get_world_size()):
 
 		moves -= 1
 
-def sort_row(rowy, ws=get_world_size()):
+def sort_row(rowy):
 	util.move_to(0, rowy)
 	moves = ws - 2
 
@@ -74,104 +77,127 @@ def sort_row(rowy, ws=get_world_size()):
 
 		moves -= 1
 
-def spawn_sorting_drone(func, arg1, arg2):
+def spawn_row_sorting_drone(rowy):
 	def task():
-		func(arg1, arg2)
+		sort_row(rowy)
 	handle = spawn_drone(task)
 	return handle
 
+def build_sorted_field_od():
+	util.traverse_l_pattern(plant_cactus, ws)
+	for columnx in range(ws):
+		sort_column(columnx)
+	for rowy in range(ws):
+		sort_row(rowy)
 
-def do_until_single(goal_func):
-	ws = get_world_size()
-	end = ws-1
-	util.move_to(0, 0)
-
-	unsorted_found = False
-	arr = {}
-
-	while not goal_func():
-		util.traverse_zig_zag_dynamic(ws, plant_cactus)
-
-		for columnx in range(ws):
-			sort_column(columnx, ws)
-		for rowy in range(ws):
-			sort_row(rowy, ws)
-
-		util.move_to(end, end)
-		if num_items(Items.Fertilizer) > 0:
-			use_item(Items.Fertilizer)
-		harvest()
-
-def plant_column(columnx, dir, ws=get_world_size()):
+def plant_and_sort_column(columnx):
 	util.move_to_x(columnx)
 	for i in range(ws):
 		plant_cactus()
 		if i < ws - 1:
 			# do not move on last iteration
 			move(North)
+	
+	sort_column(columnx)
 
-def spawn_planting_drone(columnx, dir, ws=get_world_size()):
+def spawn_planting_drone(columnx):
 	def task():
-		plant_column(columnx, dir, ws)
-	handle = spawn_drone(task)
-	return handle
+		plant_and_sort_column(columnx)
+	return spawn_drone(task)
 
+# multi-drone
+def build_sorted_field_sc():
+	global ws
+	global end
 
-def do_until_mega(goal_func):
+	util.move_to_x(0, ws)
+	drones = []
+	for columnx in range(ws):
+		if columnx != ws-1 and num_drones() < max_drones():
+			drone_handle = spawn_planting_drone(columnx)
+			if drone_handle:
+				drones.append(drone_handle)
+		else:
+			plant_and_sort_column(columnx)
+	while drones:
+		wait_for(drones[0])
+		drones.pop(0)
+
+	for rowy in range(ws-1, -1, -1):
+		if rowy != 0 and num_drones() < max_drones():
+			drone_handle = spawn_row_sorting_drone(rowy)
+			if drone_handle:
+				drones.append(drone_handle)
+		else:
+			sort_row(rowy)
+
+	util.move_to(end, end)
+	while drones:
+		wait_for(drones[0])
+		drones.pop(0)
+
+def satisfy_substance_cost_sc(substance_cost):
+	global ws
+	global end
 	ws = get_world_size()
 	end = ws-1
-	util.move_to(0, 0)
 
-	unsorted_found = False
-	
-	while not goal_func():
-		util.move_to_x(0, ws)
-		drones = []
-		for columnx in range(ws):
-			if columnx != ws-1 and num_drones() < max_drones():
-				drone_handle = spawn_planting_drone(columnx, North, ws)
-				if drone_handle:
-					drones.append(drone_handle)
-			else:
-				plant_column(columnx, ws)
-		while drones:
-			wait_for(drones[0])
-			drones.pop(0)
-
-		drones = []
-		for columnx in range(ws-1, -1, -1):
-			if columnx != 0 and num_drones() < max_drones():
-				drone_handle = spawn_sorting_drone(sort_column, columnx, ws)
-				if drone_handle:
-					drones.append(drone_handle)
-			else:
-				sort_column(columnx, ws)
-		while drones:
-			wait_for(drones[0])
-			drones.pop(0)
-
-		for rowy in range(ws-1, -1, -1):
-			if rowy != 0 and num_drones() < max_drones():
-				drone_handle = spawn_sorting_drone(sort_row, rowy, ws)
-				if drone_handle:
-					drones.append(drone_handle)
-			else:
-				sort_row(rowy, ws)
-
-		util.move_to(end, end)
-		while drones:
-			wait_for(drones[0])
-			drones.pop(0)
+	while num_items(Items.Weird_Substance) < substance_cost:
+		build_sorted_field_sc()
+		use_item(Items.Fertilizer)
 		harvest()
 
-def do_until(goal_func):
+def satisfy_substance_cost_od(substance_cost):
+	global ws
+	global end
+
+	ws = get_world_size()
+	end = ws-1
+
+	while num_items(Items.Weird_Substance) < substance_cost:
+		build_sorted_field_od()
+		util.move_to(end, end)
+		use_item(Items.Fertilizer)
+		harvest()
+
+def satisfy_cost_sc(cactus_cost):
+	global ws
+	global end
+	ws = get_world_size()
+	end = ws-1
+
+	while num_items(Items.Cactus) < cactus_cost:
+		build_sorted_field_sc()
+		harvest()
+
+def satisfy_cost_od(cactus_cost):
+	global ws
+	global end
+
+	ws = get_world_size()
+	end = ws-1
+
+	while num_items(Items.Cactus) < cactus_cost:
+		build_sorted_field_od()
+		util.move_to(end, end)
+		harvest()
+
+def satisfy_cost(cactus_cost):
 	if num_unlocked(Unlocks.Megafarm) > 0:
-		do_until_mega(goal_func)
-		#do_until_mega(goal_func)
+		satisfy_cost_sc(cactus_cost)
 	else:
-		do_until_single(goal_func)
+		satisfy_cost_od(cactus_cost)
+
+def satisfy_substance_cost(substance_cost):
+	if num_unlocked(Unlocks.Megafarm) > 0:
+		satisfy_substance_cost_sc(substancecost)
+	else:
+		satisfy_substance_cost_od(substance_cost)
 
 if __name__ == "__main__":
-	clear()
-	set_world_size(32)
-	do_until(goals.create_goal(None, { Items.Cactus: num_items(Items.Cactus)+20000000 }))
+	satisfy_cost(999999999999)
+
+# TODO: figure out a way for drones to be able to complete an entire build without having to be
+# respawned at any time. Since all cacti are harvested the drones can just wait until get_entity_type()
+# returns None, so the main challenge is whether all columns have to be sorted before rows can be
+# sorted.

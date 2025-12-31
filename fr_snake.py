@@ -47,6 +47,7 @@ def do_full_board():
 	global applex
 	global appley
 	global snake_length
+	global almighty
 
 	global x
 	global y
@@ -64,6 +65,7 @@ def do_full_board():
 
 	detours_taken_this_lap = 0
 	ignore_detours = False
+	almighty = False
 	# follow center line
 	while True:
 		dir = None
@@ -107,7 +109,7 @@ def do_full_board():
 		if not measure_and_move(dir, 1):
 			break
 
-def do_until(goal_func):
+def satisfy_cost(bone_cost):
 	global ws
 	global end
 	global top_line_y
@@ -122,11 +124,11 @@ def do_until(goal_func):
 	bottom_line_y = top_line_y - 1 
 	detour_length = bottom_line_y
 	
-	while not goal_func():
+	while num_items(Items.Bone) < bone_cost:
 		do_full_board()
 	change_hat(Hats.Straw_Hat)
 
 if __name__ == "__main__":
 	clear()
-	set_world_size(32)
-	do_until(goals.create_goal(None, {Items.Bone: 33488928}))
+	set_world_size(8)
+	satisfy_cost(999999999999)

@@ -14,37 +14,16 @@ import fr_snake
 import mazereuse
 
 def ensure_power():
-	if (num_unlocks(Unlocks.Sunflowers)) < 1:
+	if (num_unlocked(Unlocks.Sunflowers)) < 1:
 		return
 	if num_items(Items.Power) < 100:
 		ticks_at_start = get_tick_count()
 		quick_print("power almost depleted, creating more...")
-		goal_func = goals.create_goal(None, { Items.Power: 5000 })
-		do_until(goal_func)
-		if goal_unlock != None:
-			unlock(goal_unlock)
-		quick_print("unlocked", goal_unlock, "in", (get_tick_count() - ticks_at_start)/400,"seconds")
-
-def run_do_until(do_until, goal_unlock, item_requirements=None):
-	ticks_at_start = get_tick_count()
-	quick_print("starting", do_until, "until", goal_unlock)
-	goal_func = goals.create_goal(goal_unlock, item_requirements)
-	do_until(goal_func)
-	if goal_unlock != None:
-		unlock(goal_unlock)
-	quick_print("unlocked", goal_unlock, "in", (get_tick_count() - ticks_at_start)/400,"seconds")
-
-def do_single_until_unlock(single_action, goal_unlock):
-	ticks_at_start = get_tick_count()
-	quick_print("starting", single_action, "until", goal_unlock)
-	goal = goals.create_goal(goal_unlock)
-	while not goal():
-		single_action()
-	unlock(goal_unlock)
-	quick_print("unlocked", goal_unlock, "in", (get_tick_count() - ticks_at_start)/400,"seconds")
+		fr_power.satisfy_cost(5000)
+		quick_print("power replenished")
 
 def apply_item_if_needed(dict, item, value):
-	if num_items[item] >= value:
+	if num_items(item) >= value:
 		# not needed, do not apply
 		return False
 
@@ -60,9 +39,27 @@ def apply_item_if_needed(dict, item, value):
 # As a performance measure, we skip adding any items of which the cost is already satisfied,
 # using the num_items built-in
 def calc_pre_task_costs(costs):
+	if Items.Weird_Substance in costs:
+		substance_cost = costs[Items.Weird_Substance]
+		ws = get_world_size()
+		# we need to place an apple on every tile of the board for a full board to be completed
+		ws_squared = ws*ws
+		full_board_cost = ws_squared*get_cost(Entities.Cactus)[Items.Pumpkin]
+		boards_needed = util.ceil(substance_cost/(ws_squared*6/2))
+		# TODO FIXME a cactus field where catus gives 41.3k cactus only gives 144 weird substance, figure out why
+		# Likely because field is 12x12 = 144 large, so we only get one weird ubstance per plant harvested, this means we should go for pumpkin-harvests instead of cacti, because they are cheaper AND they are faster.abs
+		# TODO: switch substance-farm to pumpkins
+		if not apply_item_if_needed(costs, Items.Pumpkin, full_board_cost * boards_needed):
+			return
 	if Items.Bone in costs:
-		cost_scale = costs[Items.Bone]
-		if not apply_item_if_needed(costs, Items.Cactus, cost_scale*2):
+		bone_cost = costs[Items.Bone]
+		ws = get_world_size()
+		# we need to place an apple on every tile of the board for a full board to be completed
+		ws_squared = ws*ws
+		full_board_cost = ws_squared*get_cost(Entities.Apple)[Items.Cactus]
+		boards_needed = util.ceil(bone_cost/((ws_squared-1)**2))
+
+		if not apply_item_if_needed(costs, Items.Cactus, full_board_cost * boards_needed):
 			return
 	if Items.Cactus in costs:
 		cost_scale = costs[Items.Cactus]
@@ -79,19 +76,24 @@ def calc_pre_task_costs(costs):
 		if not apply_item_if_needed(costs, Items.Wood, cost_scale):
 			return
 
+def get_if_exists(dict, key):
+	if key in dict:
+		return dict[key]
+	return 0 
+
 def satisfy_costs(costs, ignore_zero_power=False):
 	ensure_power()
 
-	# TODO: create a list of goal_funcs and do_until-func tuples instead of accumulating costs in a large dict
 	calc_pre_task_costs(costs)
 
-	hayCost = costs[Items.Hay]
-	woodCost = costs[Items.Wood]
-	carrotCost = costs[Items.Carrot]
-	pumpkinCost = costs[Items.Pumpkin]
-	cactusCost = costs[Items.Cactus]
-	boneCost = costs[Items.Bone]
-	tasks = [] # (do_until, goal_func)
+	hay_cost = get_if_exists(costs, Items.Hay)
+	wood_cost = get_if_exists(costs, Items.Wood)
+	carrot_cost = get_if_exists(costs, Items.Carrot)
+	pumpkin_cost = get_if_exists(costs, Items.Pumpkin)
+	cactus_cost = get_if_exists(costs, Items.Cactus)
+	bone_cost = get_if_exists(costs, Items.Bone)
+	gold_cost = get_if_exists(costs, Items.Gold)
+	substance_cost = get_if_exists(costs, Items.Weird_Substance)
 
 		# harvest
 		# util.wait_and_harvest
@@ -100,37 +102,49 @@ def satisfy_costs(costs, ignore_zero_power=False):
 		# fr_bush_multi.do_until
 		# fr_tree.do_until
 	reqs = {}
-	if hayCost:
-		req[Items.Hay] = hayCost
-	if woodCost:
-		req[Items.Wood] = woodCost
-	if carrotCost:
-		req[Items.Carrot] = carrotCost
+	if hay_cost:
+		reqs[Items.Hay] = hay_cost
+		hay_cost += 200
+	if wood_cost:
+		reqs[Items.Wood] = wood_cost
+		wood_cost += 200
+	if carrot_cost:
+		reqs[Items.Carrot] = carrot_cost
 	if reqs:
 		# at least one of the trifecta is required, figure out what do_until(s) to execute and execute them
 		if num_unlocked(Unlocks.Polyculture) > 0:
-			fr_polyculture.do_until(goals.create_goal(None, reqs))
+			fr_polyculture.satisfy_costs(hay_cost, wood_cost, carrot_cost)
 		else:
-			if num_unlocks(Unlocks.Speed) == 0:
-				# we are in the initial stage, no unlocks, do harvest spam
-				fr_startup.harvest_until()
-			elif num_unlocks(Unlocks.Speed) == 1:
-				fr_startup.wait_and_harvest_until()
-			elif num_unlocks(Unlocks.Expand) == 1:
-				fr_startup.move_and_harvest_until()
+			if num_unlocked(Unlocks.Carrots):
+				if num_unlocked(Unlocks.Trees):
+					fr_tree.satisfy_costs(hay_cost, wood_cost, carrot_cost)
+				else:
+					fr_bush_multi.satisfy_costs(hay_cost, wood_cost, carrot_cost)
+			else:
+				if hay_cost:
+					if num_unlocked(Unlocks.Speed) == 0:
+						# we are in the initial stage, no unlocks, do harvest spam
+						fr_startup.basic_harvest_satisfy_hay_cost(hay_cost)
+					elif num_unlocked(Unlocks.Speed) == 1:
+						fr_startup.wait_and_harvest_satisfy_cost(hay_cost)
+					elif num_unlocked(Unlocks.Expand) == 1:
+						fr_startup.move_and_harvest_satisfy_cost(hay_cost)
+				if wood_cost:
+					quick_print(get_world_size(), num_unlocked(Unlocks.Expand))
+					fr_bush.satisfy_cost(wood_cost)
 
-	if substanceCost:
-		fr_substance.do_until(substanceCost)
+	if substance_cost:
+		fr_substance.satisfy_cost(substance_cost)
 
-	if goldCost:
-		mazereuse.do_until(goldCost)
+	if gold_cost:
+		mazereuse.satisfy_cost(gold_cost)
 
-	if pumpkinCost:
-		fr_pumpkin.do_until(costs)
-	if cactusCost:
-		fr_cactus.do_until(costs)
-	if boneCost:
-		fr_snake.do_until(costs)
+	if pumpkin_cost:
+		fr_pumpkin.satisfy_cost(pumpkin_cost)
+	if cactus_cost:
+		fr_cactus.satisfy_cost(cactus_cost)
+	if bone_cost:
+		fr_snake.satisfy_cost(bone_cost)
 
 def do_full_reset():
 	unlock_order = [
@@ -140,14 +154,15 @@ def do_full_reset():
 		Unlocks.Speed,
 		Unlocks.Expand,
 		Unlocks.Carrots,
+		Unlocks.Grass,
 		Unlocks.Speed,
 		Unlocks.Trees,
 		Unlocks.Watering,
-		Unlocks.Grass,
 		Unlocks.Expand,
 		Unlocks.Watering,
 		Unlocks.Expand,
 		Unlocks.Trees,
+		Unlocks.Grass,
 		Unlocks.Carrots,
 		Unlocks.Carrots,
 		Unlocks.Speed,
@@ -169,7 +184,7 @@ def do_full_reset():
 		Unlocks.Pumpkins,
 		Unlocks.Cactus,
 		Unlocks.Dinosaurs,
-		Unlocks.Hats,
+#		Unlocks.Hats,
 		Unlocks.Polyculture,
 		Unlocks.Expand,
 		Unlocks.Carrots,
@@ -193,5 +208,8 @@ def do_full_reset():
 		Unlocks.Dinosaurs,
 	]
 	for to_unlock in unlock_order:
+		ticks_at_start = get_tick_count()
 		satisfy_costs(get_cost(to_unlock))
-		unlock(to_unlock)
+		if not unlock(to_unlock):
+			assert()
+		quick_print("unlocked", to_unlock, "in", (get_tick_count() - ticks_at_start)/400,"seconds")
