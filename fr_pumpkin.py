@@ -150,7 +150,7 @@ def plant_and_mend_entire_field_mc():
 	total_drones = max_drones()
 	drones = []
 	next_start_x = 0
-	columns_left = 32
+	columns_left = ws
 	while True:
 		if total_drones == 1:
 			plant_and_mend_multiple_columns(next_start_x, columns_left)
@@ -182,6 +182,29 @@ def satisfy_cost(pumpkin_cost, _ws=get_world_size()):
 	else:
 		while num_items(Items.Pumpkin) < pumpkin_cost:
 			plant_and_mend_entire_field_mc()
+			harvest()
+
+def satisfy_substance_cost(substance_cost, _ws=get_world_size()):
+	global ws
+	global wsr
+	ws = _ws
+	wsr = range(ws)
+
+	md = max_drones()
+	if md >= ws:
+		while num_items(Items.Weird_Substance) < substance_cost:
+			plant_and_mend_entire_field_sc()
+			use_item(Items.Fertilizer)
+			harvest()
+	elif md == 1:
+		while num_items(Items.Weird_Substance) < substance_cost:
+			plant_and_mend_entire_field_od()
+			use_item(Items.Fertilizer)
+			harvest()
+	else:
+		while num_items(Items.Weird_Substance) < substance_cost:
+			plant_and_mend_entire_field_mc()
+			use_item(Items.Fertilizer)
 			harvest()
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 import util
-import goals
+import fr_substance
 
 total_tiles_in_the_world = -1
 
@@ -189,8 +189,10 @@ def find_solution(goal):
 	return reversed_solution
 
 def reuse_maze():
+	global world_map
 	global substance_amount
 	global lap_start
+	global mappers
 	ws = get_world_size()
 	substance_amount = ws * 2**(num_unlocked(Unlocks.Mazes) - 1)
 	total_tiles_in_the_world = ws*ws
@@ -201,6 +203,8 @@ def reuse_maze():
 	lap_start = (get_pos_x(), get_pos_y())
 	# traverse the entire map
 	index = 0
+	world_map = {}
+	mappers = []
 	tiles_left_to_populate = total_tiles_in_the_world
 	while tiles_left_to_populate > 0:
 		pos = (get_pos_x(), get_pos_y())
@@ -258,13 +262,15 @@ def reuse_maze():
 			harvest()
 			return
 
-def do_until(goal_func):
-	while not goal_func():
+def satisfy_cost(gold_cost):
+	substance_needed_for_full_solve = get_world_size() * 2**(num_unlocked(Unlocks.Mazes) - 1) * 300
+	while num_items(Items.Gold) < gold_cost:
+		if num_items(Items.Weird_Substance) < substance_needed_for_full_solve:
+			fr_substance.satisfy_cost(substance_needed_for_full_solve)
 		reuse_maze()
 
 if __name__ == "__main__":
 	clear()
 	set_world_size(14)
-	do_until(goals.create_goal(None, { Items.Gold: num_items(Items.Gold)+1}))  
-	quick_print(num_items(Items.Gold))
+	satisfy_cost(num_items(Items.Gold)+1)  
 	# do_until(goals.infinite_goal)

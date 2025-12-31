@@ -11,7 +11,7 @@ import fr_power
 import fr_polyculture
 import fr_cactus
 import fr_snake
-import mazereuse
+import fr_gold
 
 def ensure_power():
 	if (num_unlocked(Unlocks.Sunflowers)) < 1:
@@ -39,18 +39,6 @@ def apply_item_if_needed(dict, item, value):
 # As a performance measure, we skip adding any items of which the cost is already satisfied,
 # using the num_items built-in
 def calc_pre_task_costs(costs):
-	if Items.Weird_Substance in costs:
-		substance_cost = costs[Items.Weird_Substance]
-		ws = get_world_size()
-		# we need to place an apple on every tile of the board for a full board to be completed
-		ws_squared = ws*ws
-		full_board_cost = ws_squared*get_cost(Entities.Cactus)[Items.Pumpkin]
-		boards_needed = util.ceil(substance_cost/(ws_squared*6/2))
-		# TODO FIXME a cactus field where catus gives 41.3k cactus only gives 144 weird substance, figure out why
-		# Likely because field is 12x12 = 144 large, so we only get one weird ubstance per plant harvested, this means we should go for pumpkin-harvests instead of cacti, because they are cheaper AND they are faster.abs
-		# TODO: switch substance-farm to pumpkins
-		if not apply_item_if_needed(costs, Items.Pumpkin, full_board_cost * boards_needed):
-			return
 	if Items.Bone in costs:
 		bone_cost = costs[Items.Bone]
 		ws = get_world_size()
@@ -137,7 +125,7 @@ def satisfy_costs(costs, ignore_zero_power=False):
 		fr_substance.satisfy_cost(substance_cost)
 
 	if gold_cost:
-		mazereuse.satisfy_cost(gold_cost)
+		fr_gold.satisfy_cost(gold_cost)
 
 	if pumpkin_cost:
 		fr_pumpkin.satisfy_cost(pumpkin_cost)
@@ -206,6 +194,7 @@ def do_full_reset():
 		Unlocks.Trees,
 		Unlocks.Dinosaurs,
 		Unlocks.Dinosaurs,
+		Unlocks.Leaderboard,
 	]
 	for to_unlock in unlock_order:
 		ticks_at_start = get_tick_count()
