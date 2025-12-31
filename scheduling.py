@@ -5,6 +5,7 @@ import fr_startup
 import fr_bush
 import fr_bush_multi
 import fr_tree
+import fr_substance
 import fr_pumpkin
 import fr_power
 import fr_polyculture
@@ -53,6 +54,11 @@ def apply_item_if_needed(dict, item, value):
 		dict[item] = value
 	return True
 
+# this function populates the given cost-dict with the ingredients of the dict's content's costs.
+# For example if the dict contains a cost of 200 carrots, then the array will be populated with
+# 200 wood and 200 hay, because that is what it costs to plant 200 carrots.
+# As a performance measure, we skip adding any items of which the cost is already satisfied,
+# using the num_items built-in
 def calc_pre_task_costs(costs):
 	if Items.Bone in costs:
 		cost_scale = costs[Items.Bone]
@@ -79,22 +85,51 @@ def satisfy_costs(costs, ignore_zero_power=False):
 	# TODO: create a list of goal_funcs and do_until-func tuples instead of accumulating costs in a large dict
 	calc_pre_task_costs(costs)
 
-	if Items.Hay in costs or Items.Wood in costs or Items.Carrot in costs:
+	hayCost = costs[Items.Hay]
+	woodCost = costs[Items.Wood]
+	carrotCost = costs[Items.Carrot]
+	pumpkinCost = costs[Items.Pumpkin]
+	cactusCost = costs[Items.Cactus]
+	boneCost = costs[Items.Bone]
+	tasks = [] # (do_until, goal_func)
+
 		# harvest
 		# util.wait_and_harvest
 		# fr_move_and_harvest.do
 		# fr_bush.do_single_lane
 		# fr_bush_multi.do_until
 		# fr_tree.do_until
-		if num_unlocks(Unlocks.Speed) == 0:
-			# we are in the beginning stage, no unlocks
-			pass
-			
-	if Items.Pumpkin in costs:
+	reqs = {}
+	if hayCost:
+		req[Items.Hay] = hayCost
+	if woodCost:
+		req[Items.Wood] = woodCost
+	if carrotCost:
+		req[Items.Carrot] = carrotCost
+	if reqs:
+		# at least one of the trifecta is required, figure out what do_until(s) to execute and execute them
+		if num_unlocked(Unlocks.Polyculture) > 0:
+			fr_polyculture.do_until(goals.create_goal(None, reqs))
+		else:
+			if num_unlocks(Unlocks.Speed) == 0:
+				# we are in the initial stage, no unlocks, do harvest spam
+				fr_startup.harvest_until()
+			elif num_unlocks(Unlocks.Speed) == 1:
+				fr_startup.wait_and_harvest_until()
+			elif num_unlocks(Unlocks.Expand) == 1:
+				fr_startup.move_and_harvest_until()
+
+	if substanceCost:
+		fr_substance.do_until(substanceCost)
+
+	if goldCost:
+		mazereuse.do_until(goldCost)
+
+	if pumpkinCost:
 		fr_pumpkin.do_until(costs)
-	if Items.Cactus in costs:
+	if cactusCost:
 		fr_cactus.do_until(costs)
-	if Items.Bone in costs:
+	if boneCost:
 		fr_snake.do_until(costs)
 
 def do_full_reset():

@@ -1,7 +1,7 @@
 sim_unlocks = {}
 for u in Unlocks:
 	sim_unlocks[u] = num_unlocked(u)
-#sim_unlocks[Unlocks.Megafarm] = 2
+sim_unlocks[Unlocks.Megafarm] = 2
 sim_items = {
 	Items.Carrot: 123123123,
 	Items.Water: 200000,
