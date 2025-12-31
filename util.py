@@ -146,15 +146,17 @@ def traverse_zig_zag_dynamic(world_size, func):
 		secondary_dir = East
 	traverse_zig_zag_naive(x, y, world_size, world_size, func, dir, secondary_dir)
 
-def wait_and_harvest():
-	while not can_harvest():
-		continue
-	harvest()
+def traverse_l_pattern(func, ws=get_world_size(), extra_move_at_end=False):
+	end = ws - 1
+	wsr = range(ws)
+	for i in wsr:
+		for j in wsr:
+			func()
+			if j == end:
+				move(East)
+			else:
+				move(North)
 
-def harvest_if_possible():
-	if can_harvest():
-		return harvest()
-	return False
 
 def move_to_closest_corner(ws=get_world_size()):
 	end = ws-1
@@ -256,19 +258,21 @@ def calc_costs(requirements, ws=get_world_size()):
 	return new_req
 
 if __name__ == "__main__":
-	set_world_size(8)
+	set_world_size(5)
 	clear()
 	ws = get_world_size()
-	move_to(0, 0)
+	move_to(2, 4)
 	#traverse_zig_zag_dynamic(get_world_size(), get_pos_x)
 	#traverse_zig_zag_dynamic(get_world_size(), get_pos_x)
 	#traverse_zig_zag_dynamic(get_world_size(), get_pos_x)
 	#traverse_zig_zag_dynamic(get_world_size(), get_pos_x)
-	move_to(ws-1, ws-1)
+	# move_to(ws-1, ws-1)
 	
-	move_to(ws//4, ws//4)
-	move_to(0, 0)
-	move_to(ws-1, ws-1)
-	move_to(ws//4, ws//4)
-	
-	
+	# move_to(ws//4, ws//4)
+	# move_to(0, 0)
+	# move_to(ws-1, ws-1)
+	# move_to(ws//4, ws//4)
+	set_execution_speed(1)
+	traverse_l_pattern(get_pos_y, ws, True)
+	while True:
+		continue

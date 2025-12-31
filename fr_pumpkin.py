@@ -1,6 +1,15 @@
 import util
 import goals
 
+ws = None
+wsr = None
+
+# the different modes supported:
+# 1. od = one drone mode, where only one drone is used
+# 2. sc = one column per drone mode, so our drone count is equal to our world size
+# 3. mc = multiple columns per drone. where each drone handles more than one
+# 		column and we have more than one drone, but the count is lower than our world size
+
 def plant_pumpkin():
 	if get_ground_type() != Grounds.Soil:
 		till()
@@ -8,91 +17,14 @@ def plant_pumpkin():
 		harvest()
 	plant(Entities.Pumpkin)
 
-def plant_column(columnx, dir, ws=get_world_size()):
-	util.move_to_x(columnx)
-	for i in range(ws):
+def plant_column(startx):
+	util.move_to_x(startx)
+	for i in wsr:
 		plant_pumpkin()
-		if i < ws - 1:
-			# do not move on last iteration
-			move(North)
+		util.water_to(0.25)
+		move(North)
 
-def spawn_planting_drone(columnx, dir, ws=get_world_size()):
-	def task():
-		plant_column(columnx, dir, ws)
-	handle = spawn_drone(task)
-	return handle
-
-def plant_field_multi(ws=get_world_size()):
-	drones = []
-	for columnx in range(ws):
-		if columnx != ws-1 and num_drones() < max_drones():
-			drone_handle = spawn_planting_drone(columnx, North, ws)
-			drones.append(drone_handle)
-		else:
-			plant_column(columnx, ws)
-	for d in drones:
-		wait_for(d)
-
-def find_deads_on_column(columnx, ws=get_world_size()):
-	deads = []
-	util.move_to_x(columnx)
-	for i in range(ws):
-		while not can_harvest():
-			if get_entity_type() == Entities.Dead_Pumpkin:
-				harvest()
-				plant(Entities.Pumpkin)
-				util.water_to(0.75)
-				deads.append((get_pos_x(), get_pos_y()))
-				break
-			else:
-				util.water_to(0.75)
-		if i != ws - 1:
-			move(North)
-	return deads
-
-def spawn_deads_finding_drone(columnx, ws=get_world_size()):
-	def f():
-		return find_deads_on_column(columnx, ws)
-	return spawn_drone(f)
-
-def find_deads_multi(ws=get_world_size()):
-	deads = []
-	drones = []
-	for columnx in range(ws):
-		if columnx != ws-1 and num_drones() < max_drones():
-			drone_handle = spawn_deads_finding_drone(columnx, ws)
-			drones.append(drone_handle)
-		else:
-			deads += find_deads_on_column(columnx, ws)
-	for d in drones:
-		deads += wait_for(d)
-	return deads
-
-def mend_deads_multi(deads, ws=get_world_size()):
-	drones = []
-	task_packets = {}
-	mx_dr = max_drones()
-	for i in range(len(deads)):
-		k = i % mx_dr
-		if k not in task_packets:
-			task_packets[k] = 1
-		else:
-			task_packets[k] += 1
-	next_task_index = 0
-	for i in range(len(task_packets)):
-		num_tasks_to_take = task_packets[i]
-		coords_to_mend = deads[next_task_index:next_task_index+num_tasks_to_take]
-		if num_drones() < max_drones() and i < len(task_packets) - 1:
-			next_task_index += num_tasks_to_take
-			drones.append(spawn_mend_multiple_drone(coords_to_mend, ws))
-		else:
-			next_task_index += num_tasks_to_take
-			# last drone, do the task yourself
-			mend_deads(coords_to_mend, ws)
-	for d in drones:
-		wait_for(d)
-
-def mend_deads(deads, ws):
+def mend_deads(deads):
 	while deads:
 		i = 0
 		for _ in range(len(deads)):
@@ -110,66 +42,191 @@ def mend_deads(deads, ws):
 				deads.pop(i)
 			else:
 				i += 1
-				
-			
 
-def spawn_mend_multiple_drone(deads, ws):
+def plant_and_mend_multiple_columns(startx, columns):
+	util.move_to_x(startx)
+	for x in range(columns):
+		for _ in wsr:
+			plant_pumpkin()
+			util.water_to(0.25)
+			move(North)
+		if x != columns - 1:
+			move(East)
+	
+	util.move_to_x(startx)
+	deads = []
+	for x in range(columns):
+		for i in wsr:
+			while not can_harvest():
+				if get_entity_type() == Entities.Dead_Pumpkin:
+					harvest()
+					plant(Entities.Pumpkin)
+					util.water_to(0.75)
+					deads.append((get_pos_x(), get_pos_y()))
+					break
+				else:
+					util.water_to(0.75)
+			move(North)
+		if x != columns - 1:
+			move(East)
+	mend_deads(deads)
+
+def spawn_mc_drone(startx, columns):
 	def f():
-		mend_deads(deads, ws)
+		plant_and_mend_multiple_columns(startx, columns)
 	return spawn_drone(f)
 
-def do_until_multi(goal_func):
-	while not goal_func():
-		ws = get_world_size()
-		plant_field_multi(ws)
-		deads = find_deads_multi(ws)
-		mend_deads_multi(deads, ws)
-		harvest()
+def spawn_sc_drone(columnx):
+	def task():
+		plant_column(columnx)
+		return plant_and_mend_deads_on_column(columnx)
+	handle = spawn_drone(task)
+	return handle
 
-def do_until_single(goal_func):
-	ws = get_world_size()
+def plant_and_mend_deads_on_column(columnx):
+	deads = []
+	util.move_to_x(columnx)
+	plant_column(columnx)
+	for i in wsr:
+		while not can_harvest():
+			if get_entity_type() == Entities.Dead_Pumpkin:
+				harvest()
+				plant(Entities.Pumpkin)
+				util.water_to(0.75)
+				deads.append((get_pos_x(), get_pos_y()))
+				break
+			else:
+				util.water_to(0.75)
+		move(North)
+	mend_deads(deads)
 
-	while not goal_func():
-		util.move_to_closest_corner(ws)
-		util.traverse_zig_zag_dynamic(ws, plant_pumpkin)
-		# move to other corner to let the one we are standing on grow
-		util.move_over_edge_x(ws)
-		util.move_over_edge_y(ws)
-		deads = []
-		def find_and_replant_deads():
-			global deads
-			while not can_harvest():
+def spawn_single_column_drone(columnx):
+	def f():
+		plant_and_mend_deads_on_column(columnx)
+	return spawn_drone(f)
+
+# takes for granted that we have enough drones to delegate one drone per column
+def plant_and_mend_entire_field_sc():
+	drones = []
+	for columnx in wsr:
+		if columnx != ws-1:
+			drone_handle = spawn_single_column_drone(columnx)
+			drones.append(drone_handle)
+		else:
+			# last drone, do this column yourself
+			plant_and_mend_deads_on_column(columnx)
+	for d in drones:
+		wait_for(d)
+
+def plant_and_mend_entire_field_od():
+	util.traverse_l_pattern(plant_pumpkin, ws)
+	deads = []
+	def find_and_replant_deads():
+		global deads
+		while not can_harvest():
+			util.water_to(0.5)
+			if get_entity_type() == Entities.Dead_Pumpkin:
+				harvest()
+				plant(Entities.Pumpkin)
 				util.water_to(0.5)
+				deads.append((get_pos_x(), get_pos_y()))
+				return
+	util.traverse_l_pattern(find_and_replant_deads, ws)
+	while deads:
+		i = 0
+		for _ in range(len(deads)):
+			deadx, deady = deads[i]
+			util.move_to(deadx, deady)
+			while not can_harvest():
 				if get_entity_type() == Entities.Dead_Pumpkin:
 					harvest()
 					plant(Entities.Pumpkin)
 					util.water_to(0.5)
 					deads.append((get_pos_x(), get_pos_y()))
-					return
-		util.traverse_zig_zag_dynamic(ws, find_and_replant_deads)
-		while deads:
-			i = 0
-			for _ in range(len(deads)):
-				deadx, deady = deads[i]
-				util.move_to(deadx, deady)
-				while not can_harvest():
-					if get_entity_type() == Entities.Dead_Pumpkin:
-						harvest()
-						plant(Entities.Pumpkin)
-						util.water_to(0.5)
-						deads.append((get_pos_x(), get_pos_y()))
-						break
-				deads.pop(i)
-		harvest()
-		util.move_to_closest_corner(ws)
+					break
+			deads.pop(i)
 
-def do_until(goal_func):
-	if max_drones() == 1:
-		do_until_single(goal_func)
+def plant_and_mend_entire_field_mc():
+	total_drones = max_drones()
+	drones = []
+	next_start_x = 0
+	columns_left = ws
+	while True:
+		if total_drones == 1:
+			plant_and_mend_multiple_columns(next_start_x, columns_left)
+			break
+		take_columns = util.ceil(columns_left/total_drones)
+		drones.append(spawn_mc_drone(next_start_x, take_columns))
+		next_start_x += take_columns
+		columns_left -= take_columns
+		total_drones -= 1
+
+	for d in drones:
+		wait_for(d)
+
+def satisfy_cost(pumpkin_cost, _ws=get_world_size()):
+	global ws
+	global wsr
+	ws = _ws
+	wsr = range(ws)
+
+	md = max_drones()
+	if md >= ws:
+		while num_items(Items.Pumpkin) < pumpkin_cost:
+			plant_and_mend_entire_field_sc()
+			harvest()
+	elif md == 1:
+		while num_items(Items.Pumpkin) < pumpkin_cost:
+			plant_and_mend_entire_field_od()
+			harvest()
 	else:
-		do_until_multi(goal_func)
+		while num_items(Items.Pumpkin) < pumpkin_cost:
+			plant_and_mend_entire_field_mc()
+			harvest()
+
+def satisfy_substance_cost(substance_cost, _ws=get_world_size()):
+	global ws
+	global wsr
+	ws = _ws
+	wsr = range(ws)
+
+	md = max_drones()
+	if md >= ws:
+		while num_items(Items.Weird_Substance) < substance_cost:
+			plant_and_mend_entire_field_sc()
+			use_item(Items.Fertilizer)
+			harvest()
+	elif md == 1:
+		while num_items(Items.Weird_Substance) < substance_cost:
+			plant_and_mend_entire_field_od()
+			use_item(Items.Fertilizer)
+			harvest()
+	else:
+		while num_items(Items.Weird_Substance) < substance_cost:
+			plant_and_mend_entire_field_mc()
+			use_item(Items.Fertilizer)
+			harvest()
 
 if __name__ == "__main__":
-	clear()
-	set_world_size(32)
-	do_until(goals.create_goal(None, { Items.Pumpkin: num_items(Items.Pumpkin)+200000000 }))
+#	clear()
+#	set_world_size(32)
+#	do_until(goals.create_goal(None, { Items.Pumpkin: num_items(Items.Pumpkin)+200000000 }))
+	satisfy_cost(num_items(Items.Pumpkin)+200000000)
+
+# TODO for leaderboard: do not let worker-drones exit after mending is finished. Instead
+# wait for the main drone to harvest and then start replanting when there no longer is a
+# pumpkin on their tile. This method might be able to be deployed when farming normally as well,
+# but the worker drones then need to continually check for num_items > cost and then exit.
+# for the main drone to figure out if the pumpkin is done `measure()` can be used.
+# Measure returns the pumpkin's ID, so simply checking if two outer coordinates have the same
+# return-value for `measure` lets you figure out if the field is grown or not. Simply make sure
+# the main drone is on an edge, and measure, then move accross the edge and measure again,
+# compare the values, if they are equal then harvest and restart. The main drones has to make
+# sure that they are in the correct column before continuing on a new pumpkin.
+# Worker drones only have to wait for their get_entity_type() to not be equal to Entities.Pumpkin
+
+# An even better solution is to divide the field into squares instead of columns.
+# This would let the drones travel way less when mending their part of the field.
+
+# Doing any of these methods where the worker-drones live through multiple harvests, the main drone
+# will have to call `clear()` before the next farm is started. This deletes all other drones.

@@ -157,33 +157,18 @@ def multi_drone_harvest(petals, ws, ws_squared):
 		petals[i]=[]
 		i+=1
 
-def do_until_single(goal_func):
+def satisfy_cost(power_cost):
 	ws = get_world_size()
 	ws_squared = ws*ws
 	petals = create_petal_list()
-
-	while not goal_func():
-		single_drone_planting(petals, ws)
-		single_drone_harvest(petals, ws, ws_squared)
-	util.move_to_closest_corner(ws)
-
-def do_until_mega(goal_func):
-	ws = get_world_size()
-	ws_squared = ws*ws
-	petals = create_petal_list()
-
-	while not goal_func():
-		multi_drone_planting(petals, ws)
-		multi_drone_harvest(petals, ws, ws_squared)
-	util.move_to_closest_corner(ws)
-	
-
-def do_until(goal_func):
 	if max_drones() == 1:
-		do_until_single(goal_func)
+		while num_items(Items.Power) < power_cost:
+			single_drone_planting(petals, ws)
+			single_drone_harvest(petals, ws, ws_squared)
 	else:
-		do_until_mega(goal_func)
-	util.move_to_closest_corner()
+		while num_items(Items.Power) < power_cost:
+			multi_drone_planting(petals, ws)
+			multi_drone_harvest(petals, ws, ws_squared)
 
 if __name__ == "__main__":
 	clear()

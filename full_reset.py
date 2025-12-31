@@ -1,6 +1,6 @@
 import util
 import scheduling
-import fr_move_and_harvest
+import fr_startup
 import fr_bush
 import fr_bush_multi
 import fr_tree
@@ -13,13 +13,13 @@ import mazereuse
 
 def start():
 	ticks_at_start = get_tick_count()
-	scheduling.do_single_until_unlock(harvest, Unlocks.Speed)
-	scheduling.do_single_until_unlock(util.wait_and_harvest, Unlocks.Expand)
-	scheduling.do_single_until_unlock(fr_move_and_harvest.do, Unlocks.Plant)
-	scheduling.do_single_until_unlock(fr_bush.do_single_lane, Unlocks.Speed)
-	scheduling.do_single_until_unlock(fr_bush.do_single_lane, Unlocks.Expand)
+	scheduling.run_do_until(fr_startup.harvest_until, Unlocks.Speed)
+	scheduling.run_do_until(fr_startup.wait_and_harvest_until, Unlocks.Expand)
+	scheduling.run_do_until(fr_startup.move_and_harvest_until, Unlocks.Plant)
+	scheduling.run_do_until(fr_bush.do_until_single_lane, Unlocks.Speed)
+	scheduling.run_do_until(fr_bush.do_until_single_lane, Unlocks.Expand)
 	clear()
-	scheduling.do_single_until_unlock(fr_bush.do_multi_lane, Unlocks.Carrots)
+	scheduling.run_do_until(fr_bush.do_until_multi_lane, Unlocks.Carrots)
 	scheduling.run_do_until(fr_bush_multi.do_until, Unlocks.Speed)
 	scheduling.run_do_until(fr_bush_multi.do_until, Unlocks.Trees)
 	scheduling.run_do_until(fr_tree.do_until, Unlocks.Watering)

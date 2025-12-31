@@ -1,1 +1,1 @@
-leaderboard_run(Leaderboards.Maze, "fr_substance_abuse", 1000)
+leaderboard_run(Leaderboards.Maze, "sim_mazeresuse", 1000)
