@@ -18,7 +18,8 @@ world_map =	{}
 dirs = [North, East, South, West]
 
 def spawn_mapper():
-	mappers.append(spawn_drone(walk_and_create_new_map))
+	pass
+	#mappers.append(spawn_drone(walk_and_create_new_map))
 
 def check_mappers_for_updates():
 	global world_map
