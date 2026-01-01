@@ -108,6 +108,7 @@ def do_full_board():
 		ignore_detours = False
 		if not measure_and_move(dir, 1):
 			break
+	change_hat(Hats.Dinosaur_Hat)
 
 def satisfy_cost(bone_cost):
 	global ws
@@ -129,6 +130,6 @@ def satisfy_cost(bone_cost):
 	change_hat(Hats.Straw_Hat)
 
 if __name__ == "__main__":
-	clear()
-	set_world_size(8)
-	satisfy_cost(999999999999)
+	set_world_size(14)
+	satisfy_cost(num_items(Items.Bone) + 1000000)
+#	satisfy_cost(num_items(Items.Bone) + 33488928)
